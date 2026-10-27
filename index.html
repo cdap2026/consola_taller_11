@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consola Maestra Docente | Gimnasio Cristiano Faro de Luz</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            faroNavy: '#081b38',
+            faroBlue: '#0f2b54',
+            faroGold: '#c89d28',
+            faroGoldLight: '#dfb235',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      background: radial-gradient(circle at top left, #0f2b54 0%, #081b38 60%, #040c1a 100%);
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+    }
+    .glass-panel {
+      background: rgba(15, 43, 84, 0.72);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(223, 178, 53, 0.3);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .glass-sub {
+      background: rgba(8, 27, 56, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .gold-gradient {
+      background: linear-gradient(135deg, #c89d28 0%, #f59e0b 50%, #b38618 100%);
+    }
+  </style>
+</head>
+<body class="p-4 sm:p-6">
+
+  <!-- PANTALLA DE LOGIN DOCENTE (CLAVES: dmar2026 / 0323) -->
+  <div id="loginOverlay" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-7 border-2 border-faroGold text-center space-y-5">
+      <div class="w-16 h-16 rounded-2xl gold-gradient text-slate-950 flex items-center justify-center mx-auto text-3xl font-black shadow-lg">
+        🏮
+      </div>
+      <div>
+        <span class="text-xs font-extrabold uppercase tracking-widest text-faroGoldLight">Gimnasio Cristiano Faro de Luz</span>
+        <h1 class="text-2xl font-extrabold text-white mt-1">Consola Maestra Docente</h1>
+        <p class="text-xs text-slate-300 mt-1">Supervisión en Vivo, Control Remoto y Gestión de Exámenes/Talleres</p>
+      </div>
+      <div class="text-left space-y-2">
+        <label class="block text-xs font-bold text-slate-300">Clave de Acceso Institucional (Prof. Cristian David Ayazo):</label>
+        <input
+          type="password"
+          id="consolePassInput"
+          placeholder="Ingresa dmar2026 o clave de respaldo..."
+          onkeydown="if(event.key==='Enter') loginTeacherConsole()"
+          class="w-full bg-slate-900 text-white px-4 py-3 rounded-xl border border-slate-700 focus:border-faroGold focus:outline-none text-sm font-mono"
+        />
+        <p id="loginErrorMsg" class="hidden text-xs text-rose-400 font-bold">✕ Clave incorrecta. Intenta nuevamente.</p>
+      </div>
+      <button onclick="loginTeacherConsole()" class="w-full gold-gradient text-slate-950 font-extrabold py-3.5 rounded-xl text-sm uppercase tracking-wider shadow-lg hover:scale-[1.02] transition">
+        Ingresar a la Consola Docente →
+      </button>
+    </div>
+  </div>
+
+  <!-- INTERFAZ PRINCIPAL DE LA CONSOLA -->
+  <div id="consoleMainContent" class="max-w-7xl mx-auto space-y-6 hidden">
+
+    <!-- CABECERA -->
+    <header class="glass-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl gold-gradient flex items-center justify-center text-2xl shadow-md">
+          📡
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              ● Conectado a Firebase RTDB en Vivo
+            </span>
+            <span class="text-xs font-mono text-slate-400" id="lastSyncClock">--:--:--</span>
+          </div>
+          <h1 class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
+            Centro de Control y Administración de Evaluaciones — Prof. Cristian David Ayazo
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button onclick="openRegisterExamModal()" class="px-4 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400 text-cyan-200 text-xs font-extrabold transition flex items-center gap-1.5">
+          <span>➕</span> Registrar Nuevo Código
+        </button>
+        <button onclick="exportCurrentSubmissionsCSV()" class="px-4 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400 text-emerald-200 text-xs font-extrabold transition flex items-center gap-1.5">
+          <span>📊</span> Exportar Notas (CSV / Excel)
+        </button>
+        <button onclick="refreshAllDataNow()" class="gold-gradient text-slate-950 font-extrabold px-4 py-2.5 rounded-xl text-xs shadow hover:scale-105 transition">
+          🔄 Actualizar Datos
+        </button>
+      </div>
+    </header>
+
+    <!-- SELECTOR DE TALLER / EXAMEN ACTIVO Y BOTONES DE ELIMINACIÓN -->
+    <section class="glass-panel rounded-2xl p-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+        <div class="lg:col-span-6">
+          <label class="block text-xs font-extrabold uppercase tracking-wider text-faroGoldLight mb-2">
+            1. Selecciona el Taller o Evaluación a Supervisar / Administrar:
+          </label>
+          <select
+            id="examSelectorDropdown"
+            onchange="onSelectExamChange()"
+            class="w-full bg-slate-950 text-white px-4 py-3 rounded-xl border border-slate-700 focus:border-faroGold focus:outline-none text-sm font-bold"
+          >
+            <option value="TALLER-VITAMINAS-G11-2026">TALLER-VITAMINAS-G11-2026 — Taller Evaluativo: Vitaminas y Metabolismo (Grado 11°)</option>
+          </select>
+        </div>
+
+        <!-- Botones de Limpieza y Eliminación de Exámenes Desarrollados -->
+        <div class="lg:col-span-6 flex flex-wrap gap-2.5 justify-start lg:justify-end">
+          <button
+            onclick="confirmClearActiveStudents()"
+            class="px-3.5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/60 text-amber-200 text-xs font-extrabold transition flex items-center gap-1.5"
+          >
+            <span>🧹</span> Limpiar Sesiones en Curso
+          </button>
+
+          <button
+            onclick="confirmDeleteAllSubmissions()"
+            class="px-3.5 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/35 border border-rose-400/60 text-rose-200 text-xs font-extrabold transition flex items-center gap-1.5"
+          >
+            <span>🗑️</span> Eliminar Entregas Desarrolladas de este Taller
+          </button>
+
+          <button
+            onclick="confirmDeleteEntireExam()"
+            class="px-3.5 py-2.5 rounded-xl bg-rose-700/40 hover:bg-rose-700/60 border border-rose-500 text-white text-xs font-extrabold transition flex items-center gap-1.5 shadow"
+          >
+            <span>❌</span> Eliminar Examen/Taller Completo del Historial
+          </button>
+        </div>
+      </div>
+
+      <!-- Resumen Estadístico Rápido -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-slate-800">
+        <div class="glass-sub p-3.5 rounded-xl">
+          <div class="text-[11px] text-slate-400 font-bold uppercase">Código Activo</div>
+          <div id="statActiveCode" class="text-sm font-mono font-extrabold text-cyan-300 mt-0.5">TALLER-VITAMINAS-G11-2026</div>
+        </div>
+        <div class="glass-sub p-3.5 rounded-xl">
+          <div class="text-[11px] text-slate-400 font-bold uppercase">Estudiantes en Vivo</div>
+          <div id="statLiveStudents" class="text-xl font-extrabold text-amber-400 mt-0.5">0</div>
+        </div>
+        <div class="glass-sub p-3.5 rounded-xl">
+          <div class="text-[11px] text-slate-400 font-bold uppercase">Talleres Entregados</div>
+          <div id="statSubmittedCount" class="text-xl font-extrabold text-emerald-400 mt-0.5">0</div>
+        </div>
+        <div class="glass-sub p-3.5 rounded-xl">
+          <div class="text-[11px] text-slate-400 font-bold uppercase">Promedio del Grupo</div>
+          <div id="statAverageGrade" class="text-xl font-extrabold text-faroGoldLight mt-0.5">0.00 / 5.00</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMANDOS MASIVOS PARA TODOS LOS ESTUDIANTES EN VIVO -->
+    <section class="glass-panel rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+      <div class="text-xs sm:text-sm font-extrabold text-white flex items-center gap-2">
+        <span>⚡</span> Acciones Remotas Masivas (Se aplican a todos los estudiantes activos):
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="broadcastCommandToAll('UNLOCK_TIME')" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/50 text-cyan-200 text-xs font-bold">
+          🔓 Desbloquear Reloj a Todos (00:00)
+        </button>
+        <button onclick="broadcastCommandToAll('NEXT_QUESTION')" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-xs font-bold">
+          ⏭️ Avanzar Punto a Todos
+        </button>
+        <button onclick="broadcastCommandToAll('JUMP_OPEN')" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-xs font-bold">
+          ✍️ Llevar Todos a Preguntas Abiertas
+        </button>
+        <button onclick="broadcastCommandToAll('FORCE_FINISH')" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/35 border border-rose-400/50 text-rose-200 text-xs font-bold">
+          🏁 Finalizar Taller a Todos
+        </button>
+      </div>
+    </section>
+
+    <!-- PESTAÑAS DE SUPERVISIÓN: EN VIVO VS ENTREGAS DESARROLLADAS -->
+    <div class="flex gap-3">
+      <button onclick="switchConsoleView('live')" id="viewBtnLive" class="px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm gold-gradient text-slate-950 shadow">
+        📡 Estudiantes en Vivo (<span id="badgeLiveCount">0</span>)
+      </button>
+      <button onclick="switchConsoleView('submissions')" id="viewBtnSub" class="px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm glass-sub text-slate-300 hover:text-white">
+        ✅ Talleres / Exámenes Desarrollados (<span id="badgeSubCount">0</span>)
+      </button>
+    </div>
+
+    <!-- VISTA 1: MONITOREO DE ESTUDIANTES EN VIVO -->
+    <section id="liveStudentsSection" class="glass-panel rounded-2xl p-5">
+      <h2 class="text-base font-extrabold text-white mb-4 border-b border-slate-800 pb-2">
+        Estudiantes Desarrollando el Taller en Tiempo Real
+      </h2>
+      <div id="liveStudentsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-full text-center py-10 text-slate-400 text-sm">
+          Aún no hay estudiantes activos en este código. Cuando inicien en <code>index.html</code> aparecerán aquí automáticamente.
+        </div>
+      </div>
+    </section>
+
+    <!-- VISTA 2: TABLA DE EXÁMENES / TALLERES YA DESARROLLADOS (CON OPCIÓN DE ELIMINAR INDIVIDUALMENTE) -->
+    <section id="submissionsSection" class="hidden glass-panel rounded-2xl p-5">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4 border-b border-slate-800 pb-2">
+        <h2 class="text-base font-extrabold text-white">
+          Historial de Entregas Finalizadas (Con Inspección de Abiertas y Eliminación Individual)
+        </h2>
+        <span class="text-xs text-slate-400">Puedes ver el detalle escrito o eliminar cualquier entrega para que el estudiante repita o limpiar la lista.</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+          <thead>
+            <tr class="bg-slate-950 text-faroGoldLight border-b border-slate-700">
+              <th class="p-3">Estudiante</th>
+              <th class="p-3">Grado</th>
+              <th class="p-3">Cerradas</th>
+              <th class="p-3">Abiertas</th>
+              <th class="p-3">Penalización</th>
+              <th class="p-3">Nota Final</th>
+              <th class="p-3">Horario</th>
+              <th class="p-3 text-right">Acciones / Eliminar</th>
+            </tr>
+          </thead>
+          <tbody id="submissionsTableBody" class="divide-y divide-slate-800">
+            <tr>
+              <td colspan="8" class="p-8 text-center text-slate-400">No hay entregas registradas todavía para este taller.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- MODAL PARA VER LAS RESPUESTAS ABIERTAS DE UN ESTUDIANTE -->
+  <div id="studentDetailModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-3xl w-full p-6 border border-faroGold max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+        <h3 id="detailModalTitle" class="text-lg font-extrabold text-faroGoldLight">Detalle de Entrega del Estudiante</h3>
+        <button onclick="closeStudentDetailModal()" class="px-3 py-1 rounded-lg bg-rose-500/20 text-rose-300 text-xs font-bold">Cerrar ✕</button>
+      </div>
+      <div id="detailModalBody" class="overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-200 pr-1 flex-1"></div>
+    </div>
+  </div>
+
+  <!-- MODAL PARA REGISTRAR UN NUEVO EXAMEN MANUALMENTE -->
+  <div id="registerExamModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 border border-cyan-400 space-y-4">
+      <h3 class="text-lg font-extrabold text-cyan-300">➕ Registrar Nuevo Código de Taller/Examen</h3>
+      <div>
+        <label class="block text-xs font-bold text-slate-300 mb-1">Código Identificador (`examId`):</label>
+        <input type="text" id="newExamIdInput" placeholder="Ej. TALLER-VITAMINAS-G11-2026" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm font-mono" />
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-300 mb-1">Nombre Descriptivo (`examTitle`):</label>
+        <input type="text" id="newExamTitleInput" placeholder="Ej. Taller Vitaminas Grado 11°" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm" />
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeRegisterExamModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">Cancelar</button>
+        <button onclick="saveNewExamRegistration()" class="px-5 py-2 rounded-xl gold-gradient text-slate-950 text-xs font-extrabold">Guardar y Vincular</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMACIÓN SEGURO PARA ELIMINAR (CERO CONFIRM() NATIVO) -->
+  <div id="confirmDeleteModal" class="fixed inset-0 z-50 hidden bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 border-2 border-rose-500 text-center space-y-4">
+      <div class="text-4xl">🗑️</div>
+      <h3 id="confirmDeleteTitle" class="text-lg font-extrabold text-white">¿Confirmas esta eliminación?</h3>
+      <p id="confirmDeleteText" class="text-xs sm:text-sm text-slate-300 leading-relaxed"></p>
+      <div class="flex justify-center gap-3 pt-2">
+        <button onclick="closeConfirmDeleteModal()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold">
+          Cancelar
+        </button>
+        <button id="confirmDeleteActionBtn" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow-lg">
+          Sí, Eliminar Definitivamente
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICACIÓN TOAST DE LA CONSOLA -->
+  <div id="consoleToast" class="fixed bottom-5 right-5 z-50 hidden max-w-sm w-full glass-panel border-2 border-emerald-400 rounded-2xl p-4 shadow-2xl">
+    <div class="flex items-start gap-3">
+      <span id="consoleToastIcon" class="text-xl">🔔</span>
+      <div class="flex-1">
+        <h4 id="consoleToastTitle" class="text-xs font-extrabold uppercase text-emerald-300">Notificación</h4>
+        <p id="consoleToastMsg" class="text-xs text-slate-200 mt-1"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FIREBASE_BASE = 'https://faro-luz-evaluaciones-default-rtdb.firebaseio.com';
+    const DEFAULT_EXAM_ID = 'TALLER-VITAMINAS-G11-2026';
+
+    let consoleState = {
+      authenticated: false,
+      currentExamId: DEFAULT_EXAM_ID,
+      registeredExams: {},
+      liveStudents: {},
+      submissions: {},
+      previousSubCount: 0
+    };
+
+    /***************************************************************************
+     * 1. AUTENTICACIÓN DOCENTE (dmar2026 / 0323)
+     ***************************************************************************/
+    function loginTeacherConsole() {
+      const pass = document.getElementById('consolePassInput').value.trim();
+      if (pass === 'dmar2026' || pass === '0323') {
+        consoleState.authenticated = true;
+        document.getElementById('loginOverlay').classList.add('hidden');
+        document.getElementById('consoleMainContent').classList.remove('hidden');
+        ensureDefaultWorkshopRegistered();
+        refreshAllDataNow();
+        setInterval(refreshAllDataNow, 4000);
+        showConsoleNotification("Consola Sincronizada", "Conectado en vivo con el Taller de Vitaminas Grado 11°.");
+      } else {
+        document.getElementById('loginErrorMsg').classList.remove('hidden');
+      }
+    }
+
+    function ensureDefaultWorkshopRegistered() {
+      fetch(`${FIREBASE_BASE}/registeredExams/${DEFAULT_EXAM_ID}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          examId: DEFAULT_EXAM_ID,
+          examTitle: 'Taller Evaluativo Integrado: Las Vitaminas en la Salud y el Metabolismo - Grado 11°',
+          title: 'Taller Evaluativo Integrado: Las Vitaminas en la Salud y el Metabolismo - Grado 11°',
+          grade: '11°',
+          subject: 'Biología y Química Integrada',
+          teacher: 'Cristian David Ayazo',
+          totalQuestions: 25,
+          updatedAt: new Date().toISOString()
+        })
+      }).catch(() => {});
+    }
+
+    /***************************************************************************
+     * 2. CARGA Y SINCRONIZACIÓN DE EXÁMENES, ESTUDIANTES Y ENTREGAS
+     ***************************************************************************/
+    function refreshAllDataNow() {
+      if (!consoleState.authenticated) return;
+      document.getElementById('lastSyncClock').textContent = 'Sync: ' + new Date().toLocaleTimeString('es-CO', { hour12: false });
+
+      // 1. Cargar lista de exámenes registrados
+      fetch(`${FIREBASE_BASE}/registeredExams.json`)
+        .then(r => r.json())
+        .then(data => {
+          consoleState.registeredExams = data || {};
+          renderExamSelector();
+        })
+        .catch(() => {});
+
+      // 2. Cargar datos del examen activo (estudiantes en vivo + entregas)
+      const activeId = consoleState.currentExamId;
+      document.getElementById('statActiveCode').textContent = activeId;
+
+      fetch(`${FIREBASE_BASE}/exams/${activeId}.json`)
+        .then(r => r.json())
+        .then(examData => {
+          const studentsObj = (examData && examData.students) ? examData.students : {};
+          const subsObj = (examData && examData.submissions) ? examData.submissions : {};
+
+          // Detectar si llegó una nueva entrega para notificar al docente
+          const newSubCount = Object.keys(subsObj).length;
+          if (newSubCount > consoleState.previousSubCount && consoleState.previousSubCount !== 0) {
+            showConsoleNotification("¡Nueva Entrega Recibida!", `Un estudiante acaba de finalizar el taller (${newSubCount} entregas en total).`);
+          }
+          consoleState.previousSubCount = newSubCount;
+
+          consoleState.liveStudents = studentsObj;
+          consoleState.submissions = subsObj;
+
+          renderLiveStudentsGrid();
+          renderSubmissionsTable();
+          updateSummaryMetrics();
+        })
+        .catch(() => {});
+    }
+
+    function renderExamSelector() {
+      const sel = document.getElementById('examSelectorDropdown');
+      const exams = consoleState.registeredExams;
+      const keys = Object.keys(exams);
+
+      if (!keys.includes(DEFAULT_EXAM_ID)) {
+        exams[DEFAULT_EXAM_ID] = {
+          examId: DEFAULT_EXAM_ID,
+          examTitle: 'Taller Evaluativo Integrado: Las Vitaminas en la Salud y el Metabolismo - Grado 11°'
+        };
+      }
+
+      sel.innerHTML = Object.keys(exams).map(id => {
+        const item = exams[id] || {};
+        const title = item.examTitle || item.title || id;
+        const selected = id === consoleState.currentExamId ? 'selected' : '';
+        return `<option value="${id}" ${selected}>${id} — ${title}</option>`;
+      }).join('');
+    }
+
+    function onSelectExamChange() {
+      const sel = document.getElementById('examSelectorDropdown');
+      consoleState.currentExamId = sel.value;
+      consoleState.previousSubCount = 0;
+      refreshAllDataNow();
+    }
+
+    function updateSummaryMetrics() {
+      const stuList = Object.values(consoleState.liveStudents);
+      const subList = Object.values(consoleState.submissions);
+
+      document.getElementById('statLiveStudents').textContent = stuList.length;
+      document.getElementById('badgeLiveCount').textContent = stuList.length;
+      document.getElementById('statSubmittedCount').textContent = subList.length;
+      document.getElementById('badgeSubCount').textContent = subList.length;
+
+      if (subList.length === 0) {
+        document.getElementById('statAverageGrade').textContent = '0.00 / 5.00';
+      } else {
+        const sum = subList.reduce((acc, s) => acc + parseFloat(s.finalGrade || s.score || 0), 0);
+        const avg = sum / subList.length;
+        document.getElementById('statAverageGrade').textContent = `${avg.toFixed(2)} / 5.00`;
+      }
+    }
+
+    /***************************************************************************
+     * 3. RENDERIZADO DE ESTUDIANTES EN VIVO Y COMANDOS INDIVIDUALES
+     ***************************************************************************/
+    function renderLiveStudentsGrid() {
+      const container = document.getElementById('liveStudentsContainer');
+      const students = Object.values(consoleState.liveStudents);
+
+      if (students.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-10 text-slate-400 text-sm">
+            No hay estudiantes conectados en este momento para el código <strong>${consoleState.currentExamId}</strong>.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = students.map(st => {
+        const isDone = st.status === 'FINALIZADO';
+        const qCurr = st.currentQuestion || 1;
+        const qTot = st.totalQuestions || 25;
+        const pct = Math.round((qCurr / qTot) * 100);
+        const penCount = st.penaltiesCount || 0;
+        const penPts = Number(st.penaltyPoints || 0).toFixed(2);
+        const provGrade = st.provisionalGrade || st.score || '0.00';
+
+        return `
+          <div class="glass-sub p-4 rounded-2xl border ${isDone ? 'border-emerald-500/50' : 'border-cyan-500/40'} flex flex-col justify-between space-y-3">
+            <div>
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <h3 class="font-extrabold text-white text-sm">${st.studentName || st.name || st.studentId}</h3>
+                  <span class="text-[11px] font-mono text-slate-400">ID: ${st.studentId} • Act: ${st.lastUpdate || '--'}</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${isDone ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">
+                  ${isDone ? '✓ Finalizado' : `Punto ${qCurr}/${qTot}`}
+                </span>
+              </div>
+
+              <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden my-2.5">
+                <div class="h-full gold-gradient" style="width: ${pct}%;"></div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-slate-900/80 p-2 rounded-lg">
+                  <span class="text-slate-400 block text-[10px]">Nota Parcial</span>
+                  <strong class="text-faroGoldLight font-mono">${provGrade} / 5.00</strong>
+                </div>
+                <div class="bg-slate-900/80 p-2 rounded-lg">
+                  <span class="text-slate-400 block text-[10px]">Penalizaciones</span>
+                  <strong class="${penCount > 0 ? 'text-rose-400' : 'text-emerald-400'} font-mono">-${penPts} (${penCount})</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de Control Remoto y Eliminación de Sesión -->
+            <div class="flex flex-wrap gap-1.5 pt-2 border-t border-slate-800">
+              <button onclick="sendStudentCommand('${st.studentId}', 'UNLOCK_TIME')" title="Desbloquear Reloj 00:00" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-200 text-[11px] font-bold">
+                🔓 00:00
+              </button>
+              <button onclick="sendStudentCommand('${st.studentId}', 'NEXT_QUESTION')" title="Avanzar Siguiente" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 text-amber-200 text-[11px] font-bold">
+                ⏭️ Sig.
+              </button>
+              <button onclick="sendStudentCommand('${st.studentId}', 'JUMP_OPEN')" title="Ir a Abiertas" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-200 text-[11px] font-bold">
+                ✍️ Abiertas
+              </button>
+              <button onclick="sendStudentCommand('${st.studentId}', 'RESET_PENAL')" title="Exonerar Penalizaciones" class="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/35 text-purple-200 text-[11px] font-bold">
+                🛡️ 0 Penal.
+              </button>
+              <button onclick="sendStudentCommand('${st.studentId}', 'FORCE_FINISH')" title="Finalizar Ahora" class="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/35 text-rose-200 text-[11px] font-bold">
+                🏁 Fin
+              </button>
+              <button onclick="confirmDeleteSingleLiveStudent('${st.studentId}', '${(st.studentName || '').replace(/'/g, '')}')" title="Eliminar esta sesión" class="ml-auto px-2.5 py-1.5 rounded-lg bg-rose-700/40 hover:bg-rose-600 text-white text-[11px] font-bold">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function sendStudentCommand(studentId, actionName) {
+      const url = `${FIREBASE_BASE}/exams/${consoleState.currentExamId}/commands/${studentId}.json`;
+      fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: actionName, timestamp: Date.now() })
+      }).then(() => {
+        showConsoleNotification("Comando Enviado", `Se envió la orden [${actionName}] al estudiante.`);
+      }).catch(() => {});
+    }
+
+    function broadcastCommandToAll(actionName) {
+      const ids = Object.keys(consoleState.liveStudents);
+      if (ids.length === 0) {
+        showConsoleNotification("Sin Estudiantes Activos", "No hay estudiantes en curso para enviar el comando masivo.");
+        return;
+      }
+      ids.forEach(id => sendStudentCommand(id, actionName));
+    }
+
+    /***************************************************************************
+     * 4. TABLA DE ENTREGAS DESARROLLADAS Y ELIMINACIÓN DE EXÁMENES
+     ***************************************************************************/
+    function renderSubmissionsTable() {
+      const tbody = document.getElementById('submissionsTableBody');
+      const subs = Object.values(consoleState.submissions);
+
+      if (subs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400">No hay entregas finalizadas para este taller (${consoleState.currentExamId}).</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = subs.map(sub => {
+        const sId = sub.studentId;
+        const sName = sub.studentName || sub.name || sId;
+        const grade = sub.grade || '11°';
+        const closed = `${sub.closedCorrect ?? 0} / 20`;
+        const open = `${sub.openValid ?? 0} / 5`;
+        const pen = `-${Number(sub.penaltyPoints || 0).toFixed(2)} pts`;
+        const finalG = Number(sub.finalGrade || sub.score || 0).toFixed(2);
+        const timeRange = `${sub.startTime || '--'} a ${sub.endTime || '--'}`;
+
+        return `
+          <tr class="hover:bg-slate-900/60 transition">
+            <td class="p-3 font-extrabold text-white">${sName}</td>
+            <td class="p-3 text-slate-300">${grade}</td>
+            <td class="p-3 font-mono text-cyan-300">${closed}</td>
+            <td class="p-3 font-mono text-emerald-300">${open}</td>
+            <td class="p-3 font-mono text-rose-400">${pen}</td>
+            <td class="p-3 font-mono font-extrabold text-base text-faroGoldLight">${finalG}</td>
+            <td class="p-3 text-xs text-slate-400">${timeRange}</td>
+            <td class="p-3 text-right space-x-1.5">
+              <button onclick="inspectStudentSubmission('${sId}')" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/50 text-cyan-200 text-xs font-bold">
+                👁️ Ver Abiertas
+              </button>
+              <button onclick="confirmDeleteSingleSubmission('${sId}', '${sName.replace(/'/g, '')}')" class="px-3 py-1.5 rounded-lg bg-rose-600/30 hover:bg-rose-600 border border-rose-500 text-rose-200 hover:text-white text-xs font-bold">
+                🗑️ Eliminar Entrega
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function inspectStudentSubmission(studentId) {
+      const sub = consoleState.submissions[studentId];
+      if (!sub) return;
+
+      document.getElementById('detailModalTitle').textContent =
+        `Respuestas de: ${sub.studentName || sub.name} — Nota: ${sub.finalGrade || sub.score} / 5.00`;
+
+      const openArr = Array.isArray(sub.openAnswers) ? sub.openAnswers : [];
+      let openHtml = openArr.map((ans, idx) => `
+        <div class="glass-sub p-4 rounded-xl border border-slate-700">
+          <div class="font-extrabold text-faroGoldLight mb-1">Pregunta Abierta #${idx + 21}:</div>
+          <div class="bg-slate-950 p-3 rounded-lg text-slate-200 whitespace-pre-wrap">${ans || '(Sin respuesta redactada)'}</div>
+        </div>
+      `).join('');
+
+      if (!openHtml) {
+        openHtml = `<div class="text-slate-400">No se registraron textos de preguntas abiertas.</div>`;
+      }
+
+      document.getElementById('detailModalBody').innerHTML = `
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="glass-sub p-3 rounded-xl"><span class="text-xs text-slate-400 block">Cerradas Correctas</span><strong class="text-cyan-300 text-lg">${sub.closedCorrect ?? 0} / 20</strong></div>
+          <div class="glass-sub p-3 rounded-xl"><span class="text-xs text-slate-400 block">Abiertas Válidas</span><strong class="text-emerald-300 text-lg">${sub.openValid ?? 0} / 5</strong></div>
+          <div class="glass-sub p-3 rounded-xl"><span class="text-xs text-slate-400 block">Penalizaciones</span><strong class="text-rose-400 text-lg">-${sub.penaltyPoints || '0.00'} pts</strong></div>
+        </div>
+        <h4 class="font-extrabold text-white pt-2">Textos Íntegros Redactados en las 5 Preguntas Abiertas:</h4>
+        ${openHtml}
+      `;
+      document.getElementById('studentDetailModal').classList.remove('hidden');
+    }
+
+    function closeStudentDetailModal() {
+      document.getElementById('studentDetailModal').classList.add('hidden');
+    }
+
+    /***************************************************************************
+     * 5. FUNCIONES DE ELIMINACIÓN DE EXÁMENES Y ENTREGAS DESARROLLADAS
+     ***************************************************************************/
+    function openConfirmModal(title, text, onConfirmCallback) {
+      document.getElementById('confirmDeleteTitle').textContent = title;
+      document.getElementById('confirmDeleteText').textContent = text;
+      const btn = document.getElementById('confirmDeleteActionBtn');
+      btn.onclick = () => {
+        closeConfirmDeleteModal();
+        onConfirmCallback();
+      };
+      document.getElementById('confirmDeleteModal').classList.remove('hidden');
+    }
+
+    function closeConfirmDeleteModal() {
+      document.getElementById('confirmDeleteModal').classList.add('hidden');
+    }
+
+    // A. Eliminar una entrega individual ya desarrollada
+    function confirmDeleteSingleSubmission(studentId, studentName) {
+      openConfirmModal(
+        "¿Eliminar Entrega del Estudiante?",
+        `Se eliminará el examen/taller desarrollado por "${studentName}" (${studentId}) de la base de datos.`,
+        () => {
+          const exId = consoleState.currentExamId;
+          Promise.all([
+            fetch(`${FIREBASE_BASE}/exams/${exId}/submissions/${studentId}.json`, { method: 'DELETE' }),
+            fetch(`${FIREBASE_BASE}/exams/${exId}/students/${studentId}.json`, { method: 'DELETE' })
+          ]).then(() => {
+            showConsoleNotification("Entrega Eliminada", `Se eliminó el registro de ${studentName}.`);
+            refreshAllDataNow();
+          });
+        }
+      );
+    }
+
+    // B. Eliminar una sesión en vivo individual
+    function confirmDeleteSingleLiveStudent(studentId, studentName) {
+      openConfirmModal(
+        "¿Retirar Sesión en Vivo?",
+        `Se eliminará la sesión en curso de "${studentName}" del panel de monitoreo.`,
+        () => {
+          const exId = consoleState.currentExamId;
+          fetch(`${FIREBASE_BASE}/exams/${exId}/students/${studentId}.json`, { method: 'DELETE' })
+            .then(() => {
+              showConsoleNotification("Sesión Eliminada", `Se retiró la sesión de ${studentName}.`);
+              refreshAllDataNow();
+            });
+        }
+      );
+    }
+
+    // C. Limpiar todas las sesiones en vivo del taller actual
+    function confirmClearActiveStudents() {
+      const exId = consoleState.currentExamId;
+      openConfirmModal(
+        "¿Limpiar Todas las Sesiones en Vivo?",
+        `Se vaciará el tablero de estudiantes en curso del código "${exId}" (las entregas finalizadas se conservarán).`,
+        () => {
+          fetch(`${FIREBASE_BASE}/exams/${exId}/students.json`, { method: 'DELETE' })
+            .then(() => {
+              showConsoleNotification("Tablero en Vivo Limpio", "Se eliminaron las sesiones en curso.");
+              refreshAllDataNow();
+            });
+        }
+      );
+    }
+
+    // D. Eliminar TODAS las entregas ya desarrolladas de este taller
+    function confirmDeleteAllSubmissions() {
+      const exId = consoleState.currentExamId;
+      openConfirmModal(
+        "¿Eliminar Todos los Exámenes Desarrollados de este Código?",
+        `Se borrarán permanentemente todas las entregas finalizadas y sesiones del taller "${exId}", dejándolo limpio en cero para un nuevo grupo.`,
+        () => {
+          Promise.all([
+            fetch(`${FIREBASE_BASE}/exams/${exId}/submissions.json`, { method: 'DELETE' }),
+            fetch(`${FIREBASE_BASE}/exams/${exId}/students.json`, { method: 'DELETE' }),
+            fetch(`${FIREBASE_BASE}/exams/${exId}/commands.json`, { method: 'DELETE' })
+          ]).then(() => {
+            consoleState.previousSubCount = 0;
+            showConsoleNotification("Entregas Eliminadas", `Se borraron todos los exámenes desarrollados de ${exId}.`);
+            refreshAllDataNow();
+          });
+        }
+      );
+    }
+
+    // E. Eliminar por completo el Examen/Taller del catálogo y de la base de datos
+    function confirmDeleteEntireExam() {
+      const exId = consoleState.currentExamId;
+      openConfirmModal(
+        "¿Eliminar Examen/Taller Completo del Historial?",
+        `Esta acción eliminará el código "${exId}" del listado de exámenes registrados y borrará todas sus entregas y registros asociados.`,
+        () => {
+          Promise.all([
+            fetch(`${FIREBASE_BASE}/registeredExams/${exId}.json`, { method: 'DELETE' }),
+            fetch(`${FIREBASE_BASE}/exams/${exId}.json`, { method: 'DELETE' })
+          ]).then(() => {
+            delete consoleState.registeredExams[exId];
+            const remainingKeys = Object.keys(consoleState.registeredExams);
+            consoleState.currentExamId = remainingKeys.length > 0 ? remainingKeys[0] : DEFAULT_EXAM_ID;
+            showConsoleNotification("Examen Eliminado por Completo", `El código ${exId} y sus datos fueron eliminados.`);
+            refreshAllDataNow();
+          });
+        }
+      );
+    }
+
+    /***************************************************************************
+     * 6. REGISTRO MANUAL Y EXPORTACIÓN CSV / EXCEL
+     ***************************************************************************/
+    function openRegisterExamModal() {
+      document.getElementById('newExamIdInput').value = '';
+      document.getElementById('newExamTitleInput').value = '';
+      document.getElementById('registerExamModal').classList.remove('hidden');
+    }
+    function closeRegisterExamModal() {
+      document.getElementById('registerExamModal').classList.add('hidden');
+    }
+    function saveNewExamRegistration() {
+      const id = document.getElementById('newExamIdInput').value.trim().toUpperCase();
+      const title = document.getElementById('newExamTitleInput').value.trim();
+      if (!id || !title) return;
+
+      fetch(`${FIREBASE_BASE}/registeredExams/${id}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          examId: id,
+          examTitle: title,
+          title: title,
+          teacher: 'Cristian David Ayazo',
+          updatedAt: new Date().toISOString()
+        })
+      }).then(() => {
+        consoleState.currentExamId = id;
+        closeRegisterExamModal();
+        refreshAllDataNow();
+        showConsoleNotification("Código Registrado", `Se vinculó exitosamente ${id}.`);
+      });
+    }
+
+    function exportCurrentSubmissionsCSV() {
+      const subs = Object.values(consoleState.submissions);
+      if (subs.length === 0) {
+        showConsoleNotification("Sin Datos para Exportar", "Todavía no hay entregas finalizadas en este taller.");
+        return;
+      }
+
+      let csv = "\uFEFFEstudiante,Grado,Codigo_Taller,Cerradas_Correctas,Abiertas_Validas,Penalizacion,Nota_Definitiva,Hora_Inicio,Hora_Fin\n";
+      subs.forEach(s => {
+        const name = `"${(s.studentName || s.name || '').replace(/"/g, '""')}"`;
+        csv += `${name},${s.grade || '11°'},${consoleState.currentExamId},${s.closedCorrect ?? 0},${s.openValid ?? 0},${s.penaltyPoints || '0.00'},${s.finalGrade || s.score || '0.00'},${s.startTime || ''},${s.endTime || ''}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Planilla_${consoleState.currentExamId}.csv`;
+      a.click();
+    }
+
+    function switchConsoleView(view) {
+      const liveSec = document.getElementById('liveStudentsSection');
+      const subSec = document.getElementById('submissionsSection');
+      const btnLive = document.getElementById('viewBtnLive');
+      const btnSub = document.getElementById('viewBtnSub');
+
+      if (view === 'live') {
+        liveSec.classList.remove('hidden');
+        subSec.classList.add('hidden');
+        btnLive.className = "px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm gold-gradient text-slate-950 shadow";
+        btnSub.className = "px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm glass-sub text-slate-300 hover:text-white";
+      } else {
+        liveSec.classList.add('hidden');
+        subSec.classList.remove('hidden');
+        btnSub.className = "px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm gold-gradient text-slate-950 shadow";
+        btnLive.className = "px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm glass-sub text-slate-300 hover:text-white";
+      }
+    }
+
+    function showConsoleNotification(title, msg) {
+      document.getElementById('consoleToastTitle').textContent = title;
+      document.getElementById('consoleToastMsg').textContent = msg;
+      const t = document.getElementById('consoleToast');
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 4500);
+    }
+  </script>
+</body>
+</html>
